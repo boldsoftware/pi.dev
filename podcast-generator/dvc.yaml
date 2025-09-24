@@ -1,0 +1,160 @@
+vars:
+  - repos:
+      llama.cpp:
+        owner: ggerganov
+        name: llama.cpp
+      python:
+        owner: python
+        name: cpython
+      golang:
+        owner: golang
+        name: go
+      cursorless:
+        owner: cursorless-dev
+        name: cursorless
+      linux:
+        owner: torvalds
+        name: linux
+stages:
+  get-pi-dev-state:
+    foreach: ${repos}
+    do:
+      cmd:
+        'mkdir -p data/raw/${item.name} && curl https://PI_DEV_PODCAST_GENERATOR_SERVICE_HOST/github.com/${item.owner}/${item.name}.json -o data/raw/${item.name}/pi-dev-state.json'
+      outs:
+        - data/raw/${item.name}/pi-dev-state.json
+      always_changed: true
+      frozen: true
+  dump-repository:
+    foreach: ${repos}
+    do:
+      cmd:
+        mkdir -p data/raw/${item.name} && uv run podcast-generator dump-repo
+        --pi-dev-state data/raw/${item.name}/pi-dev-state.json
+        --out data/raw/${item.name}/repository.json ${item.owner}/${item.name}
+      deps:
+        - data/raw/${item.name}/pi-dev-state.json
+        - src/podcast_generator/cli/dump_repo.py
+        - src/podcast_generator/pipeline/get_repo_data.py
+        - queries/repository.graphql
+      outs:
+        - data/raw/${item.name}/repository.json
+  first-draft:
+    foreach: ${repos}
+    do:
+      cmd: mkdir -p data/interim/${item.name} && uv run podcast-generator first-draft
+        --pi-dev-state data/raw/${item.name}/pi-dev-state.json
+        --repository-data data/raw/${item.name}/repository.json
+        --out data/interim/${item.name}/first-draft.txt
+      deps:
+        - src/podcast_generator/cli/first_draft.py
+        - src/podcast_generator/pipeline/get_first_draft.py
+        - src/podcast_generator/llm_models/gemini.py
+        - prompts/context.txt
+        - prompts/guidelines.txt
+        - prompts/first-draft.txt
+        - data/raw/${item.name}/repository.json
+        - data/raw/${item.name}/pi-dev-state.json
+      outs:
+        - data/interim/${item.name}/first-draft.txt
+  extract-draft:
+    foreach: ${repos}
+    do:
+      cmd: uv run podcast-generator extract-draft
+        --input data/interim/${item.name}/first-draft.txt
+        --out data/interim/${item.name}/extract-draft.txt
+      deps:
+        - src/podcast_generator/cli/extract_draft.py
+        - src/podcast_generator/pipeline/extract_draft.py
+        - src/podcast_generator/llm_models/claude.py
+        - prompts/extract-draft.txt
+        - data/interim/${item.name}/first-draft.txt
+      outs:
+        - data/interim/${item.name}/extract-draft.txt
+  get-feedback:
+    foreach: ${repos}
+    do:
+      cmd: uv run podcast-generator get-feedback
+        --pi-dev-state data/raw/${item.name}/pi-dev-state.json
+        --input data/interim/${item.name}/extract-draft.txt
+        --out data/interim/${item.name}/get-feedback.txt
+      deps:
+        - src/podcast_generator/cli/get_feedback.py
+        - src/podcast_generator/pipeline/get_feedback.py
+        - src/podcast_generator/llm_models/claude.py
+        - prompts/guidelines.txt
+        - prompts/get-feedback.txt
+        - data/raw/${item.name}/pi-dev-state.json
+        - data/interim/${item.name}/extract-draft.txt
+      outs:
+        - data/interim/${item.name}/get-feedback.txt
+  apply-feedback:
+    foreach: ${repos}
+    do:
+      cmd: uv run podcast-generator apply-feedback
+        --draft data/interim/${item.name}/extract-draft.txt
+        --pi-dev-state data/raw/${item.name}/pi-dev-state.json
+        --repository-data data/raw/${item.name}/repository.json
+        --feedback data/interim/${item.name}/get-feedback.txt
+        --out data/interim/${item.name}/apply-feedback.txt
+      deps:
+        - src/podcast_generator/cli/apply_feedback.py
+        - src/podcast_generator/pipeline/apply_feedback.py
+        - src/podcast_generator/llm_models/gemini.py
+        - prompts/context.txt
+        - prompts/guidelines.txt
+        - prompts/apply-feedback.txt
+        - data/interim/${item.name}/extract-draft.txt
+        - data/raw/${item.name}/pi-dev-state.json
+        - data/raw/${item.name}/repository.json
+        - data/interim/${item.name}/get-feedback.txt
+      outs:
+        - data/interim/${item.name}/apply-feedback.txt
+  final-script:
+    foreach: ${repos}
+    do:
+      cmd: mkdir -p data/processed/${item.name} && uv run podcast-generator final-script
+        --input data/interim/${item.name}/apply-feedback.txt
+        --out-transcript data/interim/${item.name}/transcript.txt
+        --out-show-notes data/processed/${item.name}/${item.name}-show-notes.txt
+      deps:
+        - src/podcast_generator/cli/final_script.py
+        - src/podcast_generator/pipeline/get_final_script.py
+        - src/podcast_generator/llm_models/claude.py
+        - prompts/final-script.txt
+        - data/interim/${item.name}/apply-feedback.txt
+      outs:
+        - data/interim/${item.name}/transcript.txt
+        - data/processed/${item.name}/${item.name}-show-notes.txt
+  generate-audio:
+    foreach: ${repos}
+    do:
+      cmd: uv run podcast-generator generate-audio
+        --input data/interim/${item.name}/transcript.txt
+        --out-dir data/interim/${item.name}/audio-segments
+      deps:
+        - src/podcast_generator/cli/generate_audio.py
+        - src/podcast_generator/pipeline/generate_audio_segments.py
+        - data/interim/${item.name}/transcript.txt
+      outs:
+        - data/interim/${item.name}/audio-segments
+  join-segments:
+    foreach: ${repos}
+    do:
+      cmd: uv run podcast-generator join-segments
+        --in-dir data/interim/${item.name}/audio-segments
+        --out data/processed/${item.name}/${item.name}.mp3
+      deps:
+        - src/podcast_generator/cli/join_segments.py
+        - src/podcast_generator/pipeline/join_segments.py
+        - data/interim/${item.name}/audio-segments
+      outs:
+        - data/processed/${item.name}/${item.name}.mp3
+  github-schema:
+    cmd:
+      'curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/graphql
+      -o queries/schema.json'
+    outs:
+      - queries/schema.json
+    frozen: true
+    always_changed: true

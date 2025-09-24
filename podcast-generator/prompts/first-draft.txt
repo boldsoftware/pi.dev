@@ -1,0 +1,7 @@
+{context}
+
+You will proceed in three stages:
+
+1. Write a draft of the podcast script. Wrap the draft in `<draft_podcast>` and `</draft_podcast>` tags. It should be plain text with no special formatting, because it will be read aloud. You can include markdown links to issues, PRs, etc. as necessary.
+2. Take the viewpoint of a potential listener, and ask questions about the podcast script. The questions can ask for clarification / context on confusing points, or ask to delve into more detail. Wrap the questions in `<questions>` and `</questions>` tags. You can also include feedback about sections that are boring, or if it's unclear / inaccurate whether something has been merged or whether it is user-facing.
+3. Write a final version of the podcast script, incorporating the feedback and answering questions from the `<questions>` section, while being sure to adhere strongly to the `<guidelines>` above. Wrap the final version in `<final_podcast>` and `</final_podcast>` tags. Again, it should be plain text with no special formatting, because it will be read aloud, but you can include markdown links to issues, PRs, etc. as necessary, which will be extracted for the show notes.

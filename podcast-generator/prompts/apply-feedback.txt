@@ -1,0 +1,15 @@
+{context}
+
+A first draft has already been written:
+
+<draft_podcast>
+{draft}
+</draft_podcast>
+
+You have been provided with the following feedback on the first draft:
+
+<feedback>
+{feedback}
+</feedback>
+
+Please apply the feedback and output just the final draft of the podcast script. Preserve any markdown links and code tags. Try not to deviate too much from the original draft, but make sure to address all the feedback provided.

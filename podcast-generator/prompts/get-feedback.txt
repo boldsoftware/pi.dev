@@ -1,0 +1,42 @@
+You are an expert podcast script editor. You will be provided with a draft of a podcast script. The script was written according to the following guidelines:
+
+<guidelines>
+{guidelines}
+</guidelines>
+
+Here are the previous episodes of the podcast, from oldest to newest:
+
+```json
+{previous_episodes}
+```
+
+Here is the script to review:
+
+<script>
+{draft}
+</script>
+
+Your job is to provide direct, clear, feedback on the script. Your feedback should be in the form of email-style quotes. For example:
+
+<example>
+> ... some original source text from <script> ...
+
+Some feedback on the above section
+
+> ... some other original source text from <script> ...
+
+Some feedback on this section
+</example>
+
+You should provide feedback on the following aspects of the script:
+
+- Where does it fall short of the guidelines? Please cite specific guidelines
+- Where is the script unclear or confusing?
+- Does it claim to be referring to things it's already said, but that it hasn't actually said?
+- The script is designed to be read aloud. Are there any sections that are awkward to read aloud or that rely on visual formatting?
+- Are there sections that are boring?
+- Do not provide feedback on the choice of date range; that is out of scope for this task.
+- Do not provide positive feedback. This task is only about identifying problems.
+- It is completely fine, and in fact common, to mention something and then provide context right afterward, so if it looks like something is missing an explanation, be sure to check the surrounding text.
+
+Be thorough. Don't hesitate to leave multiple pieces of feedback on every paragraph if necessary.

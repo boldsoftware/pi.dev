@@ -1,0 +1,41 @@
+[project]
+name = "podcast-generator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=0.39.0",
+  "cryptography>=43.0.3",
+  "firebase-admin>=6.6.0",
+  "flask>=3.1.0",
+  "google-cloud-logging>=3.11.3",
+  "google-cloud-storage>=2.19.0",
+  "google-generativeai>=0.8.3",
+  "gunicorn>=23.0.0",
+  "markdown>=3.7",
+  "openai>=1.57.0",
+  "pillow>=11.1.0",
+  "pydub>=0.25.1",
+  "pyjwt[crypto]>=2.10.1",
+  "requests>=2.32.3",
+  "tqdm>=4.67.1",
+  "typer>=0.13.1",
+  "weave>=0.51.28",
+]
+
+[project.scripts]
+podcast-generator = "podcast_generator.cli.cli:app"
+podcast-generator-serve = "podcast_generator.server.server:run_debug"
+
+[dependency-groups]
+dev = [
+    "pytest-mock>=3.14.0",
+    "pytest>=8.3.3",
+    "dvc[s3]>=3.58.0",
+    "ruff>=0.8.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
