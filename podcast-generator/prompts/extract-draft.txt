@@ -1,7 +1,0 @@
-Extract the final draft from the input. Preserve any markdown links and code tags
-
-<input>
-{input}
-</input>
-
-You must output just the final draft itself, with no surrounding tags or metadata or preamble. Be sure to output the complete draft, verbatim, with no changes except for the removal of the surrounding tags and metadata.
